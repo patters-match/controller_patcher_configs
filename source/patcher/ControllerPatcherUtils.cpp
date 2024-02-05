@@ -344,9 +344,35 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcherUtils::normalizeStickValues(
     return CONTROLLER_PATCHER_ERROR_NONE;
 }
 
-f32 ControllerPatcherUtils::convertAnalogValue(u16 value, u16 default_val, u16 min, u16 max, u8 invert,u16 deadzone){
-    s16 new_value = (s16)(value - default_val);
-    u16 range = 0;
+// f32 ControllerPatcherUtils::convertAnalogValue(u16 value, u16 default_val, u16 min, u16 max, u8 invert,u16 deadzone){
+//     s16 new_value = (s16)(value - default_val);
+//     u16 range = 0;
+//     if(value >= max){
+//         if(invert == 0x01) return -1.0f;
+//         return 1.0f;
+//     }else if(value <= min){
+//         if(invert == 0x01) return 1.0f;
+//         return -1.0f;
+//     }
+//     if((value-deadzone) > default_val){
+//         new_value -= deadzone;
+//         range = (max - (default_val + deadzone));
+//     }else if((value+deadzone) < default_val){
+//         new_value += deadzone;
+//         range = ((default_val - deadzone) - min);
+//     }else{
+//         return 0.0f;
+//     }
+//     if(invert != 0x01){
+//         return (new_value / (1.0f*range));
+//     }else{
+//         return -1.0f*(new_value / (1.0f*range));
+//     }
+// }
+
+f32 ControllerPatcherUtils::convertAnalogValue(u8 value, u8 default_val, u8 min, u8 max, u8 invert,u8 deadzone){
+    s8 new_value = (s8)(value - default_val);
+    u8 range = 0;
     if(value >= max){
         if(invert == 0x01) return -1.0f;
         return 1.0f;
@@ -354,7 +380,7 @@ f32 ControllerPatcherUtils::convertAnalogValue(u16 value, u16 default_val, u16 m
         if(invert == 0x01) return 1.0f;
         return -1.0f;
     }
-    if((value-deadzone) > default_val){
+    if((value - deadzone) > default_val){
         new_value -= deadzone;
         range = (max - (default_val + deadzone));
     }else if((value+deadzone) < default_val){
@@ -380,20 +406,54 @@ f32 ControllerPatcherUtils::convertAnalogSignedValue(s16 value, s16 default_val,
         return invert == 0x01 ? 1.0f : -1.0f;
     }
 
-    if(abs(value) > deadzone){
-        if(value > default_val){
-            new_value -= deadzone;
-            range = (max - deadzone);
-        }else{
-            new_value += deadzone;
-            range = (min + deadzone);
+    if (abs(value - default_val) > deadzone) {
+        if (value > default_val) {
+            new_value = value - deadzone;
+            range = max - (default_val + deadzone);
+        } else {
+            new_value = value + deadzone;
+            range = (default_val - deadzone) - min;
         }
-    }else{
-        return 0.0f;
+        // Adjust new_value to scale within the new range
+        if (new_value > default_val) {
+            // Scale the positive side of the range
+            new_value = ((new_value - default_val) / range) * (max - default_val);
+        } else {
+            // Scale the negative side of the range
+            new_value = ((new_value - default_val) / range) * (default_val - min);
+        }
+    } else {
+        return 0.0f; // Within deadzone, so no movement
     }
 
-    f32 normalized_value = new_value / range;
+    // Normalize the new_value to a [-1.0, 1.0] scale based on the adjusted range
+    f32 normalized_value;
+    if (new_value > default_val) {
+        // If new_value is on the positive side of the neutral position
+        normalized_value = (new_value - (default_val + deadzone)) / (max - (default_val + deadzone));
+    } else {
+        // If new_value is on the negative side of the neutral position
+        normalized_value = (new_value - (default_val - deadzone)) / ((default_val - deadzone) - min);
+    }
+
     return invert == 0x01 ? -normalized_value : normalized_value;
+
+
+
+    // if(abs(value) > deadzone){
+    //     if(value > default_val){
+    //         new_value -= deadzone;
+    //         range = (max - deadzone);
+    //     }else{
+    //         new_value += deadzone;
+    //         range = (min + deadzone);
+    //     }
+    // }else{
+    //     return 0.0f;
+    // }
+
+    // f32 normalized_value = new_value / range;
+    // return invert == 0x01 ? -normalized_value : normalized_value;
 }
 
 Vec2D ControllerPatcherUtils::getAnalogValueByButtons(u8 stick_values){
@@ -470,7 +530,7 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcherUtils::convertAnalogSticks(H
         u16 axis_input = 0;
         s16 axis_signed = 0;
 
-        if( config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_X][0] != CONTROLLER_PATCHER_INVALIDVALUE){
+        if(config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_X][0] != CONTROLLER_PATCHER_INVALIDVALUE){
             if(config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_X_DEADZONE][0] == CONTROLLER_PATCHER_VALUE_SET){
                 deadzone = config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_X_DEADZONE][1];
             }
@@ -484,7 +544,9 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcherUtils::convertAnalogSticks(H
                 axis_input |= (cur_data[config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_X][0] + 1] << 8);
 
                 // Shift right to trim unwanted leading bits
-                axis_input >>= config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_X_BIT_OFFSET][1];
+                if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_X_BIT_OFFSET][0] == CONTROLLER_PATCHER_VALUE_SET){
+                    axis_input >>= config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_X_BIT_OFFSET][1];
+                }
 
                 // Mask off unwanted trailing bits
                 axis_input &= ((1 << config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_X_BIT_LENGTH][1]) - 1);
@@ -524,7 +586,9 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcherUtils::convertAnalogSticks(H
             
             if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_BIT_LENGTH][0] == CONTROLLER_PATCHER_VALUE_SET && config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_BIT_LENGTH][1] > 8){
                 axis_input |= (cur_data[config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y][0] + 1] << 8);
-                axis_input >>= config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_BIT_OFFSET][1];
+                if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_BIT_OFFSET][0] == CONTROLLER_PATCHER_VALUE_SET){
+                    axis_input >>= config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_BIT_OFFSET][1];
+                }
                 axis_input &= ((1 << config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_BIT_LENGTH][1]) - 1);
             }
             if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_SIGNED][1]) {
@@ -560,7 +624,9 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcherUtils::convertAnalogSticks(H
             
             if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_BIT_LENGTH][0] == CONTROLLER_PATCHER_VALUE_SET && config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_BIT_LENGTH][1] > 8){
                 axis_input |= (cur_data[config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X][0] + 1] << 8);
-                axis_input >>= config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_BIT_OFFSET][1];
+                if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_BIT_OFFSET][0] == CONTROLLER_PATCHER_VALUE_SET){
+                    axis_input >>= config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_BIT_OFFSET][1];
+                }
                 axis_input &= ((1 << config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_BIT_LENGTH][1]) - 1);
             }
             if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_SIGNED][1]) {
@@ -596,7 +662,9 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcherUtils::convertAnalogSticks(H
             
             if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_BIT_LENGTH][0] == CONTROLLER_PATCHER_VALUE_SET && config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_BIT_LENGTH][1] > 8){
                 axis_input |= (cur_data[config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y][0] + 1] << 8);
-                axis_input >>= config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_BIT_OFFSET][1];
+                if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_BIT_OFFSET][0] == CONTROLLER_PATCHER_VALUE_SET){
+                    axis_input >>= config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_BIT_OFFSET][1];
+                }
                 axis_input &= ((1 << config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_BIT_LENGTH][1]) - 1);
             }
             if (config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_SIGNED][1]) {

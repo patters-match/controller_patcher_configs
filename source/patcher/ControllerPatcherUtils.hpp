@@ -187,8 +187,9 @@ class ControllerPatcherUtils{
 
             \return When the functions failed result < 0 is returned. If the result is >= 0 the function was successful.
         **/
-        static f32 convertAnalogValue(u16 value, u16 default_val, u16 min, u16 max, u8 invert,u16 deadzone);
-        static f32 convertAnalogValueSigned(s16 value, s16 default_val, s16 min, s16 max, u8 invert, s16 deadzone);
+        //static f32 convertAnalogValue(u16 value, u16 default_val, u16 min, u16 max, u8 invert,u16 deadzone);
+        static f32 convertAnalogValue(u8 value, u8 default_val, u8 min, u8 max, u8 invert,u8 deadzone);
+        static f32 convertAnalogSignedValue(s16 value, s16 default_val, s16 min, s16 max, u8 invert, s16 deadzone);
 
         /**
             \brief Calculates a the stick data (Vec2D) from given digital direction.
