@@ -538,7 +538,7 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcherUtils::convertAnalogSticks(H
                                                               config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_INVERT][1],
                                                               deadzone);
             else {
-                buffer->lstick.y += convertAnalogValue(cur_data[config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y][0]],
+                buffer->lstick.y += convertAnalogValue(l_stick_y_axis_input,
                                                        config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y][1],
                                                        config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_MINMAX][0],
                                                        config_controller[deviceslot][CONTRPS_VPAD_BUTTON_L_STICK_Y_MINMAX][1],
@@ -573,7 +573,7 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcherUtils::convertAnalogSticks(H
                                                               config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_INVERT][1],
                                                               deadzone);
             } else {
-                buffer->rstick.x += convertAnalogValue(cur_data[config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X][0]],
+                buffer->rstick.x += convertAnalogValue(r_stick_x_axis_input,
                                                        config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X][1],
                                                        config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_MINMAX][0],
                                                        config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_X_MINMAX][1],
@@ -608,7 +608,7 @@ CONTROLLER_PATCHER_RESULT_OR_ERROR ControllerPatcherUtils::convertAnalogSticks(H
                                                               config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_INVERT][1],
                                                               deadzone);
             else {
-                buffer->rstick.y += convertAnalogValue(cur_data[config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y][0]],
+                buffer->rstick.y += convertAnalogValue(r_stick_y_axis_input,
                                                        config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y][1],
                                                        config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_MINMAX][0],
                                                        config_controller[deviceslot][CONTRPS_VPAD_BUTTON_R_STICK_Y_MINMAX][1],
